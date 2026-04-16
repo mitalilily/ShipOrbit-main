@@ -56,7 +56,7 @@ const UserMenu = () => {
       icon: MdAccountCircle,
       color: INK,
       onClick: () => {
-        navigate('/profile/user_profile/settings/user')
+        navigate('/profile/user_profile')
         handleClose()
       },
     },

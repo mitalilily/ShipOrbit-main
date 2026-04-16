@@ -88,12 +88,12 @@ const navItems: NavItem[] = [
     children: [
       {
         text: 'Connected Channels',
-        path: '/channels/connected',
+        path: '/channel/connected',
         icon: <MdApps size={STANDARD_ICON_SIZE} />,
       },
       {
-        text: 'Channel Integrations',
-        path: '/channels/channel_list',
+        text: 'Available Channels',
+        path: '/channel/available',
         icon: <MdOutlineAddBusiness size={STANDARD_ICON_SIZE} />,
       },
     ],
@@ -147,18 +147,23 @@ const navItems: NavItem[] = [
     roles: ['customer', 'admin'],
     children: [
       {
-        text: 'Wallet Transactions',
-        path: '/billing/wallet_transactions',
+        text: 'Billing Details',
+        path: '/billingdetail',
         icon: <TbTransactionRupee size={STANDARD_ICON_SIZE} />,
       },
       {
-        text: 'Billing Invoices',
-        path: '/billing/invoice_management',
+        text: 'Order Invoice',
+        path: '/billing/order-invoice',
         icon: <TbInvoice size={STANDARD_ICON_SIZE} />,
       },
       {
-        text: 'COD Remittance',
-        path: '/cod-remittance',
+        text: 'Communication Invoice',
+        path: '/billing/communication-invoice',
+        icon: <TbInvoice size={STANDARD_ICON_SIZE} />,
+      },
+      {
+        text: 'COD',
+        path: '/billing/cod',
         icon: <MdAccountBalanceWallet size={STANDARD_ICON_SIZE} />,
       },
     ],
@@ -215,6 +220,53 @@ const navItems: NavItem[] = [
     icon: <RiSettings2Fill size={STANDARD_ICON_SIZE} />,
     path: '/settings',
     roles: ['customer', 'admin'],
+    children: [
+      {
+        text: 'Settings Hub',
+        path: '/settings',
+        icon: <RiSettings2Fill size={STANDARD_ICON_SIZE} />,
+      },
+      {
+        text: 'Pickup Addresses',
+        path: '/settings/manage_pickups',
+        icon: <MdLocalShipping size={STANDARD_ICON_SIZE} />,
+      },
+      {
+        text: 'Invoice Preferences',
+        path: '/settings/invoice_preferences',
+        icon: <TbInvoice size={STANDARD_ICON_SIZE} />,
+      },
+      {
+        text: 'Billing Preferences',
+        path: '/settings/billing_preferences',
+        icon: <FaMoneyBill size={STANDARD_ICON_SIZE} />,
+      },
+      {
+        text: 'Label Settings',
+        path: '/settings/label_config',
+        icon: <FaFileAlt size={STANDARD_ICON_SIZE} />,
+      },
+      {
+        text: 'User Management',
+        path: '/settings/users_management',
+        icon: <MdAccountBalanceWallet size={STANDARD_ICON_SIZE} />,
+      },
+      {
+        text: 'Courier Priority',
+        path: '/settings/courier-priority',
+        icon: <MdOutlineRateReview size={STANDARD_ICON_SIZE} />,
+      },
+      {
+        text: 'API Integration',
+        path: '/settings/api-integration',
+        icon: <MdApps size={STANDARD_ICON_SIZE} />,
+      },
+      {
+        text: 'API Docs',
+        path: '/settings/api-docs',
+        icon: <BiInfoCircle size={STANDARD_ICON_SIZE} />,
+      },
+    ],
   },
   {
     text: 'Support',
@@ -249,35 +301,35 @@ export default function Sidebar({ role = 'customer', pinned, hovered, setHovered
 
   const activeItemSx = {
     position: 'relative',
-    background: alpha(brand.accent, 0.08),
+    background: alpha(brand.accent, 0.12),
     color: brand.ink,
     '& .MuiListItemIcon-root': { color: brand.ink },
     '& .MuiListItemText-primary': { fontWeight: 800 },
     '&::before': {
       content: '""',
       position: 'absolute',
-      left: -8,
-      top: 6,
-      bottom: 6,
-      width: 4,
-      borderRadius: 999,
+      left: 0,
+      top: 8,
+      bottom: 8,
+      width: 3,
+      borderRadius: '0 999px 999px 0',
       backgroundColor: brand.accent,
     },
   }
 
   const navItemSx = {
     mx: 0,
-    my: 0.35,
-    borderRadius: 10,
+    my: 0.15,
+    borderRadius: 1.5,
     py: 0.95,
-    px: 1.6,
+    px: 1.35,
     color: brand.inkSoft,
     border: '1px solid transparent',
     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
     '&:hover': {
-      bgcolor: '#FFFFFF',
+      bgcolor: alpha(brand.accent, 0.06),
       color: brand.ink,
-      borderColor: alpha(brand.line, 1),
+      borderColor: alpha(brand.accent, 0.14),
       '& .MuiListItemIcon-root': { color: brand.ink },
     },
   }
@@ -400,38 +452,37 @@ export default function Sidebar({ role = 'customer', pinned, hovered, setHovered
     <Box
       sx={{
         width: isSidebarExpanded ? DRAWER_WIDTH : COLLAPSED_WIDTH,
-        height: 'calc(100vh - 10px)',
-        background: 'rgba(255,255,255,0.94)',
-        border: `1px solid ${alpha(brand.line, 1)}`,
-        borderRadius: '24px',
+        height: '100vh',
+        background: '#FFFFFF',
+        borderRight: `1px solid ${alpha(brand.line, 1)}`,
+        borderRadius: 0,
         transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'flex',
         flexDirection: 'column',
         zIndex: theme.zIndex.drawer,
         position: 'fixed',
-        left: 10,
-        top: 10,
+        left: 0,
+        top: 0,
         overflowX: 'hidden',
-        boxShadow: '0 16px 40px rgba(23, 19, 16, 0.06)',
-        backdropFilter: 'blur(12px)',
+        boxShadow: 'none',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <Box sx={{ p: 1.25, mb: 0.85 }}>
+      <Box sx={{ p: 1.25, mb: 0.25, borderBottom: `1px solid ${alpha(brand.line, 1)}` }}>
         <Box
           sx={{
-            p: isSidebarExpanded ? 1.7 : 1,
-            borderRadius: '20px',
-            background: 'linear-gradient(135deg, #1f31ff 0%, #3558ff 56%, #3e97ff 100%)',
+            p: isSidebarExpanded ? 1.6 : 1,
+            borderRadius: '16px',
+            background: 'linear-gradient(180deg, #FF7A1A 0%, #FF6600 100%)',
             color: '#FFFFFF',
-            minHeight: isSidebarExpanded ? 118 : 58,
+            minHeight: isSidebarExpanded ? 108 : 56,
             display: 'flex',
             alignItems: isSidebarExpanded ? 'stretch' : 'center',
             justifyContent: 'center',
             flexDirection: isSidebarExpanded ? 'column' : 'row',
             border: 'none',
-            boxShadow: '0 16px 32px rgba(31, 49, 255, 0.24)',
+            boxShadow: '0 12px 24px rgba(255, 102, 0, 0.18)',
           }}
         >
           <BrandLogo
@@ -464,13 +515,13 @@ export default function Sidebar({ role = 'customer', pinned, hovered, setHovered
         </Box>
       </Box>
 
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', px: isSidebarExpanded ? 1 : 0.8 }}>
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', px: isSidebarExpanded ? 0.9 : 0.7, py: 0.7 }}>
         <Box
           sx={{
-            p: isSidebarExpanded ? 0.7 : 0.2,
-            borderRadius: '18px',
-            bgcolor: alpha('#FFFFFF', 0.86),
-            border: `1px solid ${alpha(brand.line, 1)}`,
+            p: isSidebarExpanded ? 0.55 : 0.15,
+            borderRadius: '16px',
+            bgcolor: '#FFFFFF',
+            border: 'none',
           }}
         >
           {renderNavList(navItems.filter((item) => item.roles.includes(role || 'customer')))}
@@ -481,7 +532,7 @@ export default function Sidebar({ role = 'customer', pinned, hovered, setHovered
         sx={{
           p: 1.1,
           borderTop: `1px solid ${alpha(brand.line, 1)}`,
-          bgcolor: 'transparent',
+          bgcolor: '#FFFFFF',
         }}
       >
         <ListItemButton

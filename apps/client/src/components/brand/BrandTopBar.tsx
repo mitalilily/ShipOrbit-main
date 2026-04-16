@@ -17,8 +17,10 @@ export default function BrandTopBar({
         position: 'sticky',
         top: 0,
         zIndex: 1200,
-        px: { xs: 1.5, sm: 2 },
-        py: { xs: 1, sm: 1.25 },
+        px: { xs: 1, sm: 1.5 },
+        py: 0,
+        backgroundColor: '#F5F7FA',
+        borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
         ...sx,
       }}
       {...rest}
@@ -26,8 +28,12 @@ export default function BrandTopBar({
       <BrandSurface
         variant="card"
         sx={{
-          px: { xs: 1.5, sm: 2, lg: 2.5 },
-          py: { xs: 1, sm: 1.15 },
+          px: { xs: 1.2, sm: 1.6, lg: 2.1 },
+          py: { xs: 0.95, sm: 1.05 },
+          borderRadius: 0,
+          border: 'none',
+          boxShadow: 'none',
+          background: '#FFFFFF',
           ...innerSx,
         }}
       >

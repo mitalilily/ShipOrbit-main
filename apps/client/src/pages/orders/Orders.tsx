@@ -1,247 +1,355 @@
-import { alpha, Alert, Box, Button, Container, Fade, Popover, Stack, Typography } from '@mui/material'
-import { useState } from 'react'
-import { MdAdd } from 'react-icons/md'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import AllOrders from '../../components/orders/AllOrders'
-import B2COrderFormSteps from '../../components/orders/b2c/B2COrderForm'
-import CustomDrawer from '../../components/UI/drawer/CustomDrawer'
-import { useMerchantReadiness } from '../../hooks/useMerchantReadiness'
+import { Box, Button, Divider, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { useMemo, useState } from 'react'
+import { FiFilter, FiRefreshCcw, FiSearch } from 'react-icons/fi'
+import { HiOutlineDownload } from 'react-icons/hi'
+import { NavLink, useLocation } from 'react-router-dom'
+import { brand } from '../../theme/brand'
+
+const panelSx = {
+  bgcolor: '#FFFFFF',
+  border: '1px solid #e7ebf0',
+  borderRadius: '10px',
+  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+}
+
+const miniFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '4px',
+    minHeight: 32,
+    fontSize: '0.71rem',
+    '& fieldset': { borderColor: '#eceff4' },
+  },
+}
+
+const topTabs = [
+  { label: 'Processed Order', path: '/shipment' },
+  { label: 'Failed Orders', path: '/shipment/failed' },
+]
+
+const directionTabs = [
+  { label: 'Forward', key: 'forward' },
+  { label: 'Reverse', key: 'reverse' },
+]
+
+const statusTabs = [
+  'Not Picked',
+  'In Transit',
+  'Out for Delivery',
+  'Delivered',
+  'NDR',
+  'Return',
+  'Cancelled',
+  'On Process',
+  'Draft Orders',
+  'All Orders',
+]
+
+const headers = [
+  'Order Details',
+  'Tracking Details',
+  'Invoice/Ref No.',
+  'Product Details',
+  'Amount Details',
+  'Pickup Address',
+  'Consignee Address',
+  'Action',
+]
+
+const isPath = (pathname: string, path: string) => pathname === path || pathname.startsWith(`${path}/`)
 
 export default function Orders() {
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [orderType, setOrderType] = useState<'b2c' | 'b2b' | null>(null)
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const navigate = useNavigate()
   const location = useLocation()
-  const { isReady, progress, firstIncompleteStep } = useMerchantReadiness()
+  const [direction, setDirection] = useState<'forward' | 'reverse'>('forward')
+  const [status, setStatus] = useState('Not Picked')
+  const isFailed = isPath(location.pathname, '/shipment/failed')
 
-  const openPopover = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget)
-  }
-
-  const closePopover = () => {
-    setAnchorEl(null)
-  }
-
-  const handleSelectOrderType = (type: 'b2c' | 'b2b') => {
-    if (!isReady) {
-      navigate(firstIncompleteStep?.path || '/home')
-      closePopover()
-      return
-    }
-
-    setOrderType(type)
-    setDrawerOpen(true)
-    closePopover()
-  }
-
-  const glass = {
-    backdropFilter: 'blur(16px)',
-    background: 'rgba(255, 255, 255, 0.98)',
-    border: '1px solid rgba(29, 40, 66, 0.12)',
-    boxShadow: '0 14px 32px rgba(29, 40, 66, 0.12)',
-    borderRadius: '14px',
-    p: 3,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 2,
-  }
-
-  const orderTabs = [
-    { label: 'All Orders', path: '/orders/list' },
-    { label: 'B2C Orders', path: '/orders/b2c/list' },
-    { label: 'B2B Orders', path: '/orders/b2b/list' },
-  ]
+  const title = useMemo(() => (isFailed ? 'Failed Orders' : status), [isFailed, status])
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 1.5, md: 2.4 } }}>
-      {!isReady && (
-        <Alert
-          severity="warning"
-          action={
-            <Button color="inherit" size="small" onClick={() => navigate(firstIncompleteStep?.path || '/home')}>
-              Continue Setup
-            </Button>
-          }
-          sx={{ mb: 3 }}
-        >
-          <Typography sx={{ fontWeight: 700 }}>Order creation is locked</Typography>
-          <Typography variant="body2">
-            Complete merchant readiness first. Current progress: {progress}%.
-          </Typography>
-        </Alert>
-      )}
-
-      <Box
-        sx={{
-          mb: 2.2,
-          borderRadius: 2.5,
-          overflow: 'hidden',
-          border: '1px solid rgba(29, 40, 66, 0.1)',
-          boxShadow: '0 12px 28px rgba(29, 40, 66, 0.08)',
-          bgcolor: '#ffffff',
-        }}
-      >
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          alignItems={{ xs: 'flex-start', md: 'center' }}
-          justifyContent="space-between"
-          gap={2}
-          sx={{
-            px: { xs: 1.5, md: 2.2 },
-            py: { xs: 1.35, md: 1.6 },
-            borderTop: '14px solid #1D2842',
-          }}
-        >
-          <Stack direction="row" alignItems="center" spacing={1.4}>
-            <Box
-              sx={{
-                width: 18,
-                height: 18,
-                borderRadius: 0.4,
-                border: '2px solid #1D2842',
-                boxShadow: 'inset 0 0 0 2px #ffffff',
-                bgcolor: '#1D2842',
-              }}
-            />
-            <Typography sx={{ fontSize: { xs: '1.5rem', md: '1.9rem' }, fontWeight: 700, color: '#1D2842' }}>
-              Orders
-            </Typography>
+    <Box sx={{ pb: 2 }}>
+      <Stack spacing={1.15}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack direction="row" spacing={0.45}>
+            {topTabs.map((tab) => {
+              const active = isPath(location.pathname, tab.path)
+              return (
+                <Button
+                  key={tab.path}
+                  component={NavLink}
+                  to={tab.path}
+                  sx={{
+                    minHeight: 26,
+                    px: 1.05,
+                    borderRadius: '4px',
+                    textTransform: 'none',
+                    fontSize: '0.63rem',
+                    fontWeight: 700,
+                    color: active ? '#FFFFFF' : '#525a66',
+                    bgcolor: active ? '#111111' : '#f6f7f9',
+                    border: active ? '1px solid #111111' : '1px solid #eceff4',
+                  }}
+                >
+                  {tab.label}
+                </Button>
+              )
+            })}
           </Stack>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} useFlexGap flexWrap="wrap">
-            <Button variant="outlined" onClick={() => window.location.reload()} sx={{ borderRadius: 1.2 }}>
-              Refresh
-            </Button>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            {directionTabs.map((item) => {
+              const active = item.key === direction
+              return (
+                <Button
+                  key={item.key}
+                  onClick={() => setDirection(item.key as 'forward' | 'reverse')}
+                  sx={{
+                    minWidth: 'auto',
+                    p: 0,
+                    textTransform: 'none',
+                    fontSize: '0.68rem',
+                    color: active ? brand.accent : '#7b8390',
+                    fontWeight: active ? 700 : 500,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 9,
+                      height: 9,
+                      borderRadius: 999,
+                      border: `1px solid ${active ? brand.accent : '#c7ccd6'}`,
+                      mr: 0.5,
+                      display: 'inline-grid',
+                      placeItems: 'center',
+                    }}
+                  >
+                    {active ? <Box sx={{ width: 5, height: 5, borderRadius: 999, bgcolor: brand.accent }} /> : null}
+                  </Box>
+                  {item.label}
+                </Button>
+              )
+            })}
+          </Stack>
+
+          <Stack direction="row" spacing={0.65}>
             <Button
-              startIcon={<MdAdd />}
-              onClick={openPopover}
-              variant="contained"
-              size="medium"
-              disabled={!isReady}
+              startIcon={<FiFilter size={12} />}
               sx={{
-                bgcolor: '#1D2842',
-                color: '#FFFFFF',
-                fontWeight: 700,
-                px: 2.6,
-                py: 1,
-                borderRadius: 1.2,
-                '&:hover': {
-                  bgcolor: '#152038',
-                },
+                minHeight: 28,
+                px: 1,
+                borderRadius: '4px',
+                textTransform: 'none',
+                fontSize: '0.66rem',
+                color: '#525a66',
+                border: '1px solid #eceff4',
               }}
             >
-              Create Order
+              Show Filter
+            </Button>
+            <Button
+              sx={{
+                minHeight: 28,
+                px: 1,
+                borderRadius: '4px',
+                textTransform: 'none',
+                fontSize: '0.66rem',
+                fontWeight: 700,
+                color: '#FFFFFF',
+                bgcolor: brand.accent,
+              }}
+            >
+              + Shipping Manifest
             </Button>
           </Stack>
         </Stack>
 
-        <Stack
-          direction="row"
-          flexWrap="wrap"
-          gap={0}
-          sx={{
-            px: { xs: 1.25, md: 1.8 },
-            py: 1.8,
-            borderTop: '1px solid rgba(29, 40, 66, 0.08)',
-            bgcolor: '#ffffff',
-          }}
-        >
-          {orderTabs.map((tab) => {
-            const active = location.pathname === tab.path
+        <Stack direction="row" spacing={0.8} alignItems="center">
+          <TextField select value="Place Date" sx={{ ...miniFieldSx, width: 118 }}>
+            <MenuItem value="Place Date">Place Date</MenuItem>
+          </TextField>
+          <TextField value="09-Apr-2026 12:00 am - 16-Apr-2026 11:59 pm" sx={{ ...miniFieldSx, width: 218 }} />
+          <TextField select value="Tracking ID" sx={{ ...miniFieldSx, width: 106 }}>
+            <MenuItem value="Tracking ID">Tracking ID</MenuItem>
+          </TextField>
+          <TextField value="xxxxxxxxxx" sx={{ ...miniFieldSx, width: 120 }} />
+          <Button
+            startIcon={<FiSearch size={12} />}
+            sx={{
+              minHeight: 32,
+              px: 1.2,
+              borderRadius: '4px',
+              textTransform: 'none',
+              fontSize: '0.68rem',
+              color: '#FFFFFF',
+              bgcolor: brand.accent,
+            }}
+          >
+            Search
+          </Button>
+          <Button
+            startIcon={<FiRefreshCcw size={12} />}
+            sx={{
+              minHeight: 32,
+              px: 1.1,
+              borderRadius: '4px',
+              textTransform: 'none',
+              fontSize: '0.68rem',
+              color: '#6b7280',
+              border: '1px solid #eceff4',
+            }}
+          >
+            Reset
+          </Button>
+        </Stack>
 
+        <Stack direction="row" spacing={0.4} sx={{ flexWrap: 'wrap' }}>
+          {statusTabs.map((tab) => {
+            const active = tab === title || (!isFailed && tab === status)
             return (
               <Button
-                key={tab.path}
-                component={NavLink}
-                to={tab.path}
+                key={tab}
+                onClick={() => setStatus(tab)}
                 sx={{
-                  borderRadius: 0,
-                  px: 2.2,
-                  py: 1.3,
-                  mr: -0.5,
-                  minWidth: 'unset',
-                  border: '1px solid rgba(29, 40, 66, 0.28)',
-                  color: active ? '#ffffff' : '#1D2842',
-                  bgcolor: active ? '#1D2842' : '#ffffff',
-                  fontWeight: active ? 800 : 700,
-                  '&:hover': {
-                    bgcolor: active ? '#1D2842' : alpha('#1D2842', 0.04),
-                  },
+                  minHeight: 26,
+                  px: 1,
+                  borderRadius: '4px',
+                  textTransform: 'none',
+                  fontSize: '0.62rem',
+                  fontWeight: active ? 700 : 500,
+                  color: active ? '#FFFFFF' : '#6b7280',
+                  bgcolor: active ? '#111111' : '#FFFFFF',
+                  border: `1px solid ${active ? '#111111' : '#eceff4'}`,
+                  ...(!active
+                    ? {
+                        '&:hover': { bgcolor: '#f8fafc' },
+                      }
+                    : {}),
                 }}
               >
-                {tab.label}
+                {tab}
               </Button>
             )
           })}
         </Stack>
-      </Box>
 
-      <Box sx={{ mt: 1.5 }}>
-        <AllOrders />
-      </Box>
+        <Box sx={{ ...panelSx, p: 1.05 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.1}>
+            <Box>
+              <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#2f343c' }}>
+                {title}
+              </Typography>
+              <Typography sx={{ fontSize: '0.6rem', color: '#8b93a1', mt: 0.25 }}>
+                Showing 0 - 0 of 0 orders
+              </Typography>
+            </Box>
+            <Typography sx={{ fontSize: '0.72rem', color: '#4b5563' }}>200 ▾</Typography>
+          </Stack>
 
-      <Popover
-        open={Boolean(anchorEl)}
-        anchorEl={anchorEl}
-        sx={{ mt: 1 }}
-        onClose={closePopover}
-        slots={{ transition: Fade }}
-        transitionDuration={200}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{ paper: { sx: glass } }}
-      >
-        <Button
-          variant="outlined"
-          onClick={() => handleSelectOrderType('b2c')}
-          sx={{
-            borderColor: '#1D2842',
-            color: '#1D2842',
-            fontWeight: 600,
-            textTransform: 'none',
-            px: 2.5,
-            py: 1,
-            borderRadius: '8px',
-            '&:hover': {
-              borderColor: '#152038',
-              backgroundColor: 'rgba(29, 40, 66, 0.08)',
-              color: '#152038',
-            },
-          }}
-        >
-          Create B2C Order
-        </Button>
-        <Button
-          variant="outlined"
-          onClick={() => handleSelectOrderType('b2b')}
-          sx={{
-            borderColor: '#1D2842',
-            color: '#1D2842',
-            fontWeight: 600,
-            textTransform: 'none',
-            px: 2.5,
-            py: 1,
-            borderRadius: '8px',
-            '&:hover': {
-              borderColor: '#152038',
-              backgroundColor: 'rgba(29, 40, 66, 0.08)',
-              color: '#152038',
-            },
-          }}
-        >
-          Create B2B Order
-        </Button>
-      </Popover>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+            <Box />
+            <Stack direction="row" spacing={0.55} alignItems="center">
+              <Button
+                startIcon={<HiOutlineDownload size={12} />}
+                sx={{
+                  minHeight: 28,
+                  px: 1,
+                  borderRadius: '4px',
+                  textTransform: 'none',
+                  fontSize: '0.66rem',
+                  color: '#6b7280',
+                  border: '1px solid #eceff4',
+                }}
+              >
+                Export
+              </Button>
+              <Button
+                sx={{
+                  minHeight: 28,
+                  px: 1,
+                  borderRadius: '4px',
+                  textTransform: 'none',
+                  fontSize: '0.66rem',
+                  color: '#6b7280',
+                  border: '1px solid #eceff4',
+                }}
+              >
+                Product Picklist
+              </Button>
+              <Button sx={{ minWidth: 28, minHeight: 28, border: '1px solid #eceff4', borderRadius: '4px' }}>
+                ‹
+              </Button>
+              <Button sx={{ minWidth: 28, minHeight: 28, border: '1px solid #eceff4', borderRadius: '4px' }}>
+                ›
+              </Button>
+            </Stack>
+          </Stack>
 
-      <CustomDrawer
-        width={1400}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        title={orderType === 'b2c' ? 'Create New B2C Order' : 'Create New B2B Order'}
-      >
-        {orderType === 'b2c' ? <B2COrderFormSteps onClose={() => setDrawerOpen(false)} /> : null}
-      </CustomDrawer>
-    </Container>
+          <Divider sx={{ borderColor: '#eef1f5' }} />
+
+          <Box sx={{ overflowX: 'auto' }}>
+            <Box
+              sx={{
+                minWidth: 1010,
+                display: 'grid',
+                gridTemplateColumns: '34px repeat(7, minmax(110px, 1fr)) 92px',
+                alignItems: 'center',
+              }}
+            >
+              <Box sx={{ py: 1.05, px: 0.6 }}>
+                <Box sx={{ width: 12, height: 12, border: '1px solid #d5dbe4', borderRadius: '2px' }} />
+              </Box>
+              {headers.map((header) => (
+                <Typography
+                  key={header}
+                  sx={{
+                    py: 1.05,
+                    px: 0.55,
+                    fontSize: '0.6rem',
+                    fontWeight: 700,
+                    color: '#5d6673',
+                  }}
+                >
+                  {header}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+
+          <Divider sx={{ borderColor: '#eef1f5' }} />
+
+          <Box
+            sx={{
+              minHeight: 144,
+              display: 'grid',
+              placeItems: 'center',
+            }}
+          >
+            <Typography sx={{ fontSize: '0.67rem', color: '#8f97a3' }}>
+              No orders found. Try adjusting filters.
+            </Typography>
+          </Box>
+
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mt={1.1}>
+            <Stack direction="row" spacing={0.45}>
+              <Button sx={{ minWidth: 24, minHeight: 24, border: '1px solid #eceff4', borderRadius: '4px' }}>
+                ‹
+              </Button>
+              <Button
+                sx={{
+                  minWidth: 24,
+                  minHeight: 24,
+                  border: '1px solid #eceff4',
+                  borderRadius: '4px',
+                  fontSize: '0.66rem',
+                  color: '#111827',
+                }}
+              >
+                1
+              </Button>
+            </Stack>
+            <Typography sx={{ fontSize: '0.6rem', color: '#9aa3af' }}> </Typography>
+          </Stack>
+        </Box>
+      </Stack>
+    </Box>
   )
 }

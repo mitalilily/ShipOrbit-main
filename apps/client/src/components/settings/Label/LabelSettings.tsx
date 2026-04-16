@@ -1,26 +1,16 @@
 import {
+  alpha,
   Box,
   Button,
-  Card,
-  CardContent,
-  Checkbox,
-  Divider,
-  FormControlLabel,
-  FormGroup,
-  Grid,
-  Radio,
-  RadioGroup,
   Stack,
+  Switch,
   TextField,
   Typography,
 } from '@mui/material'
-import React from 'react'
-import { Controller, useForm } from 'react-hook-form'
-import { useLabelPreferences } from '../../../hooks/useLabelPreferences'
-import { mapApiToForm, mapFormToApi } from '../../../utils/labelPreferencesMapper'
-import { glassStyles } from '../../UI/accordion/FormSectionAccordion'
-import PageHeading from '../../UI/heading/PageHeading'
-import { LabelPreview } from './LabelPreview'
+import { useMemo, useState } from 'react'
+import { HiOutlineSave } from 'react-icons/hi'
+import { NavLink, useLocation } from 'react-router-dom'
+import { brand } from '../../../theme/brand'
 
 export type LabelSettingsForm = {
   orderInfo: Record<string, boolean>
@@ -31,281 +21,401 @@ export type LabelSettingsForm = {
   printer: 'thermal' | 'inkjet'
 }
 
-const defaultValues: LabelSettingsForm = {
-  printer: 'thermal',
-  charLimit: 25,
-  maxItems: 3,
-  orderInfo: {
-    orderId: true,
-    invoiceNumber: true,
-    orderDate: false,
-    invoiceDate: false,
-    orderBarcode: true,
-    invoiceBarcode: true,
-    declaredValue: true,
-    cod: true,
-    awb: true,
-    terms: true,
-  },
-  shipperInfo: {
-    shipperPhone: true,
-    gstin: true,
-    shipperAddress: true,
-    rtoAddress: false,
-    sellerBrandName: true,
-    brandLogo: true,
-  },
-  productInfo: {
-    itemName: true,
-    productCost: true,
-    productQuantity: true,
-    skuCode: false,
-    dimension: false,
-    deadWeight: false,
-    otherCharges: true,
-  },
+const panelSx = {
+  bgcolor: '#FFFFFF',
+  border: '1px solid #e7ebf0',
+  borderRadius: '10px',
+  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
 }
 
-const mockOrder = {
-  name: 'Venkatesh Puri',
-  address: '111/222, XYZ, Ram Nagar, Paharganj, South Delhi, Delhi, India. 110093.',
-  phone: '+91 9560188888',
-  orderId: '8052081712989',
-  sortCode: 'JBN/JBN/PA',
-  paymentType: 'cod',
-  invoiceNumber: 'INV-98765',
-  orderDate: '23 Mar, 2024',
-  invoiceDate: '22 Mar, 2024',
-  awb: '143263813003739',
-  codValue: '₹1350',
-  declaredValue: '₹1350',
-  courier: 'Bluedart',
-  shipper: {
-    name: 'Seller Brand Name',
-    phone: '011 4715 2407',
-    gst: '9764713698798013',
-    address:
-      'XX/YY, ABC Apartments, Pitampura, Opp. Metro Pillar 36, New Delhi, Delhi, India. 110034',
-    rtoAddress:
-      'XX/YY, ABC Apartments, Pitampura, Opp. Metro Pillar 36, New Delhi, Delhi, India. 110034',
-    logoUrl: 'https://via.placeholder.com/120x40?text=Seller+Logo',
-  },
-  products: [
-    { name: 'Navy Blue T-shirt', sku: '695095207050', qty: 2, price: '₹450' },
-    { name: 'Mechanical Keyboard', sku: 'KEY456', qty: 1, price: '₹2499' },
-    { name: 'HD Webcam', sku: 'CAM789', qty: 1, price: '₹1999' },
-  ],
-  dimension: '35x34x11',
-  deadWeight: '0.73 KG',
-  otherCharges: '₹550',
-  totalAmount: '₹1900',
+const tabs = [
+  { label: 'Label Setting', path: '/setting/labelsetting' },
+  { label: 'Secure Your Shipment', path: '/setting/secureshipment' },
+  { label: 'Manage Team', path: '/setting/manageteam' },
+  { label: 'Invoice Settings', path: '/setting/invoicepage' },
+  { label: 'API Docs', path: '/setting/apidocs' },
+  { label: 'Unique QR Code', path: '/setting/uniqueqr' },
+]
+
+const labelRows = [
+  'Hide Invoice Value',
+  'Hide Return Address',
+  'Hide Seller Contact Details',
+  'Hide Products',
+  'Hide Display Logo',
+  'Hide Weight',
+  'Hide consignee mobile',
+  'Order Id/Invoice Number',
+  'Hide Return Warehouse Name',
+  'Hide Express Type (Air/Surface)',
+  'Show Channel Order Number Barcode',
+  'Hide GST Number',
+]
+
+const isPath = (pathname: string, path: string) => pathname === path || pathname.startsWith(`${path}/`)
+
+const previewLabel = {
+  company: 'Kailash Company',
+  barcode: '347846332613',
+  shipTo: ['Kailash', '9876543211', 'noida, noida', 'Noida, Uttar pradeshPin - 201304'],
+  orderId: '10879389',
+  refInvoice: '5838799345922',
+  orderNumber: '1001',
+  date: '01-01-1970',
+  invoiceValue: 'Rs',
+  phone: '+91 - 8448952103',
 }
 
 export default function LabelSettingsPage() {
-  const { preferences, isLoading, savePreferences, saving } = useLabelPreferences()
+  const location = useLocation()
+  const [displayName, setDisplayName] = useState('')
+  const [logoFile, setLogoFile] = useState('')
+  const [format, setFormat] = useState('Old Format')
+  const [paper, setPaper] = useState('4 x 6')
+  const [fileType, setFileType] = useState('HTML')
+  const [toggles, setToggles] = useState<Record<string, boolean>>(
+    Object.fromEntries(labelRows.map((row) => [row, false])),
+  )
 
-  const { control, watch, handleSubmit, reset } = useForm<LabelSettingsForm>({
-    defaultValues,
-  })
+  const activeTab = useMemo(
+    () => tabs.find((tab) => isPath(location.pathname, tab.path))?.path || '/setting/labelsetting',
+    [location.pathname],
+  )
 
-  React.useEffect(() => {
-    if (preferences) reset(mapApiToForm(preferences))
-  }, [preferences, reset])
-
-  const values = watch()
-
-  const onSubmit = (data: LabelSettingsForm) => {
-    savePreferences(mapFormToApi(data))
-  }
-
-  if (isLoading) return <Typography>Loading label preferences...</Typography>
+  const toggleRow = (key: string) => setToggles((prev) => ({ ...prev, [key]: !prev[key] }))
 
   return (
-    <Stack gap={2}>
-      <PageHeading title="Label Settings" />
-      <Grid container spacing={3} sx={{ p: 3 }}>
-        {/* Left: Settings */}
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Card sx={{ ...glassStyles }}>
-            <CardContent>
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <Stack spacing={3}>
-                  {/* Order Info */}
-                  <Box>
-                    <Typography fontWeight="bold" gutterBottom>
-                      Order Info
-                    </Typography>
-                    <Controller
-                      name="orderInfo"
-                      control={control}
-                      render={({ field }) => (
-                        <FormGroup>
-                          {Object.entries(field.value).map(([key, checked]) => (
-                            <FormControlLabel
-                              key={key}
-                              control={
-                                <Checkbox
-                                  checked={checked}
-                                  onChange={(e) =>
-                                    field.onChange({
-                                      ...field.value,
-                                      [key]: e.target.checked,
-                                    })
-                                  }
-                                />
-                              }
-                              label={key.replace(/([A-Z])/g, ' $1')}
-                            />
-                          ))}
-                        </FormGroup>
-                      )}
+    <Box sx={{ pb: 2 }}>
+      <Stack spacing={1.15}>
+        <Stack direction="row" spacing={0.45} sx={{ flexWrap: 'wrap' }}>
+          {tabs.map((tab) => {
+            const active = activeTab === tab.path
+            return (
+              <Button
+                key={tab.path}
+                component={NavLink}
+                to={tab.path}
+                sx={{
+                  minHeight: 26,
+                  px: 1.05,
+                  borderRadius: '4px',
+                  textTransform: 'none',
+                  fontSize: '0.63rem',
+                  fontWeight: 700,
+                  color: active ? '#FFFFFF' : '#6b7280',
+                  bgcolor: active ? '#111111' : '#f6f7f9',
+                  border: active ? '1px solid #111111' : '1px solid #eceff4',
+                }}
+              >
+                {tab.label}
+              </Button>
+            )
+          })}
+        </Stack>
+
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack spacing={0.8}>
+            <Stack direction="row" spacing={1.4} alignItems="center">
+              <Typography sx={{ fontSize: '0.66rem', fontWeight: 700, color: '#4b5563' }}>
+                Label Size:
+              </Typography>
+              {['Old Format', '4 x 4', '4.5 x 6.25', '4 x 6', 'Product Symmetric', 'Hsn Label'].map((option) => {
+                const active = option === format || option === paper
+                return (
+                  <Button
+                    key={option}
+                    onClick={() => {
+                      if (option === 'Old Format') setFormat(option)
+                      else setPaper(option)
+                    }}
+                    sx={{
+                      minWidth: 'auto',
+                      p: 0,
+                      textTransform: 'none',
+                      fontSize: '0.63rem',
+                      color: active ? brand.accent : '#7b8390',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 9,
+                        height: 9,
+                        borderRadius: 999,
+                        border: `1px solid ${active ? brand.accent : '#c7ccd6'}`,
+                        mr: 0.45,
+                        display: 'inline-grid',
+                        placeItems: 'center',
+                      }}
+                    >
+                      {active ? <Box sx={{ width: 5, height: 5, borderRadius: 999, bgcolor: brand.accent }} /> : null}
+                    </Box>
+                    {option}
+                  </Button>
+                )
+              })}
+            </Stack>
+
+            <Stack direction="row" spacing={1.4} alignItems="center">
+              <Typography sx={{ fontSize: '0.66rem', fontWeight: 700, color: '#4b5563' }}>
+                File Type:
+              </Typography>
+              {['HTML', 'PDF'].map((option) => {
+                const active = option === fileType
+                return (
+                  <Button
+                    key={option}
+                    onClick={() => setFileType(option)}
+                    sx={{
+                      minWidth: 'auto',
+                      p: 0,
+                      textTransform: 'none',
+                      fontSize: '0.63rem',
+                      color: active ? brand.accent : '#7b8390',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 9,
+                        height: 9,
+                        borderRadius: 999,
+                        border: `1px solid ${active ? brand.accent : '#c7ccd6'}`,
+                        mr: 0.45,
+                        display: 'inline-grid',
+                        placeItems: 'center',
+                      }}
+                    >
+                      {active ? <Box sx={{ width: 5, height: 5, borderRadius: 999, bgcolor: brand.accent }} /> : null}
+                    </Box>
+                    {option}
+                  </Button>
+                )
+              })}
+            </Stack>
+          </Stack>
+
+          <Button
+            startIcon={<HiOutlineSave size={12} />}
+            sx={{
+              minHeight: 30,
+              px: 1.25,
+              borderRadius: '4px',
+              textTransform: 'none',
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              color: '#FFFFFF',
+              bgcolor: brand.accent,
+            }}
+          >
+            Save
+          </Button>
+        </Stack>
+
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '1.02fr 1fr',
+            gap: 1,
+          }}
+        >
+          <Box sx={{ ...panelSx, p: 1.1 }}>
+            <Stack direction="row" spacing={0.8} alignItems="center" mb={1}>
+              <TextField
+                label="Display Name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                sx={{
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': {
+                    minHeight: 34,
+                    fontSize: '0.72rem',
+                    borderRadius: '4px',
+                    '& fieldset': { borderColor: '#eceff4' },
+                  },
+                  '& .MuiInputLabel-root': { fontSize: '0.72rem' },
+                }}
+              />
+              <TextField
+                label="Display Logo (png, jpg, jpeg)"
+                value={logoFile}
+                onChange={(e) => setLogoFile(e.target.value)}
+                sx={{
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': {
+                    minHeight: 34,
+                    fontSize: '0.72rem',
+                    borderRadius: '4px',
+                    '& fieldset': { borderColor: '#eceff4' },
+                  },
+                  '& .MuiInputLabel-root': { fontSize: '0.72rem' },
+                }}
+              />
+              <Button
+                sx={{
+                  minHeight: 34,
+                  px: 1.25,
+                  borderRadius: '4px',
+                  textTransform: 'none',
+                  fontSize: '0.66rem',
+                  color: '#6b7280',
+                  border: '1px solid #eceff4',
+                }}
+              >
+                Choose file
+              </Button>
+              <Button
+                sx={{
+                  minHeight: 34,
+                  px: 1.25,
+                  borderRadius: '4px',
+                  textTransform: 'none',
+                  fontSize: '0.66rem',
+                  color: '#FFFFFF',
+                  bgcolor: brand.accent,
+                }}
+              >
+                Update
+              </Button>
+            </Stack>
+
+            <Box sx={{ border: '1px solid #eef1f5', borderRadius: '8px', overflow: 'hidden' }}>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: '38px 1.1fr 1.1fr 78px',
+                  bgcolor: '#fafbfc',
+                  borderBottom: '1px solid #eef1f5',
+                }}
+              >
+                {['#', 'Title', 'Description', 'Action'].map((header) => (
+                  <Typography
+                    key={header}
+                    sx={{
+                      px: 1,
+                      py: 0.9,
+                      fontSize: '0.6rem',
+                      fontWeight: 700,
+                      color: '#5d6673',
+                    }}
+                  >
+                    {header}
+                  </Typography>
+                ))}
+              </Box>
+
+              {labelRows.map((row, index) => (
+                <Box
+                  key={row}
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '38px 1.1fr 1.1fr 78px',
+                    alignItems: 'center',
+                    borderBottom: index === labelRows.length - 1 ? 'none' : '1px solid #f1f4f7',
+                  }}
+                >
+                  <Typography sx={{ px: 1, py: 0.85, fontSize: '0.63rem', color: '#5d6673' }}>
+                    {index + 1}
+                  </Typography>
+                  <Typography sx={{ px: 1, py: 0.85, fontSize: '0.63rem', color: '#2f343c' }}>
+                    {row}
+                  </Typography>
+                  <Typography sx={{ px: 1, py: 0.85, fontSize: '0.63rem', color: '#7b8390' }}>
+                    {row}
+                  </Typography>
+                  <Box sx={{ px: 1, py: 0.4 }}>
+                    <Switch
+                      checked={toggles[row]}
+                      onChange={() => toggleRow(row)}
+                      size="small"
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': { color: brand.accent },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                          backgroundColor: alpha(brand.accent, 0.6),
+                        },
+                      }}
                     />
                   </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
 
-                  <Divider />
-
-                  {/* Shipper Info */}
-                  <Box>
-                    <Typography fontWeight="bold" gutterBottom>
-                      Shipper Info
+          <Box sx={{ ...panelSx, p: 0, minHeight: 412 }}>
+            <Box
+              sx={{
+                m: 0.9,
+                border: '1px solid #70757d',
+                minHeight: 258,
+                display: 'grid',
+                gridTemplateColumns: '1.18fr 1fr',
+              }}
+            >
+              <Box sx={{ borderRight: '1px solid #70757d' }}>
+                <Box sx={{ minHeight: 60, p: 0.9, borderBottom: '1px solid #70757d' }}>
+                  <Typography sx={{ fontSize: '1.15rem', fontWeight: 700, color: '#28313b', mt: 0.35 }}>
+                    {previewLabel.company}
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 0.8, borderBottom: '1px solid #70757d' }}>
+                  <Box
+                    sx={{
+                      width: 95,
+                      height: 18,
+                      background:
+                        'repeating-linear-gradient(90deg, #111 0 2px, #fff 2px 4px, #111 4px 6px, #fff 6px 8px)',
+                      mb: 0.4,
+                    }}
+                  />
+                  <Typography sx={{ fontSize: '0.7rem', letterSpacing: '0.16em', color: '#374151' }}>
+                    {previewLabel.barcode}
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 0.72, borderBottom: '1px solid #70757d' }}>
+                  <Typography sx={{ fontSize: '0.66rem', color: '#4b5563', mb: 0.25 }}>Deliver To:</Typography>
+                  {previewLabel.shipTo.map((line) => (
+                    <Typography key={line} sx={{ fontSize: '0.7rem', color: '#1f2937', lineHeight: 1.32 }}>
+                      {line}
                     </Typography>
-                    <Controller
-                      name="shipperInfo"
-                      control={control}
-                      render={({ field }) => (
-                        <FormGroup>
-                          {Object.entries(field.value).map(([key, checked]) => (
-                            <FormControlLabel
-                              key={key}
-                              control={
-                                <Checkbox
-                                  checked={checked}
-                                  onChange={(e) =>
-                                    field.onChange({
-                                      ...field.value,
-                                      [key]: e.target.checked,
-                                    })
-                                  }
-                                />
-                              }
-                              label={key.replace(/([A-Z])/g, ' $1')}
-                            />
-                          ))}
-                        </FormGroup>
-                      )}
-                    />
-                  </Box>
-
-                  <Divider />
-
-                  {/* Product Info */}
-                  <Box>
-                    <Typography fontWeight="bold" gutterBottom>
-                      Products and Package Info
-                    </Typography>
-                    <Controller
-                      name="productInfo"
-                      control={control}
-                      render={({ field }) => (
-                        <FormGroup>
-                          {Object.entries(field.value).map(([key, checked]) => (
-                            <FormControlLabel
-                              key={key}
-                              control={
-                                <Checkbox
-                                  checked={checked}
-                                  onChange={(e) =>
-                                    field.onChange({
-                                      ...field.value,
-                                      [key]: e.target.checked,
-                                    })
-                                  }
-                                />
-                              }
-                              label={key.replace(/([A-Z])/g, ' $1')}
-                            />
-                          ))}
-                        </FormGroup>
-                      )}
-                    />
-
-                    <Stack direction="row" spacing={2} mt={2}>
-                      <Controller
-                        name="charLimit"
-                        control={control}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            type="number"
-                            label="Limit Item Name Characters"
-                            size="small"
-                            fullWidth
-                          />
-                        )}
-                      />
-                      <Controller
-                        name="maxItems"
-                        control={control}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            type="number"
-                            label="Limit Line Items"
-                            size="small"
-                            fullWidth
-                          />
-                        )}
-                      />
-                    </Stack>
-                  </Box>
-
-                  <Divider />
-
-                  {/* Printer Options */}
-                  <Box>
-                    <Typography fontWeight="bold" gutterBottom>
-                      Printer Type
-                    </Typography>
-                    <Controller
-                      name="printer"
-                      control={control}
-                      render={({ field }) => (
-                        <RadioGroup {...field}>
-                          <FormControlLabel
-                            value="thermal"
-                            control={<Radio />}
-                            label="Thermal Printer (4x6 inch, bulk, no ink)"
-                          />
-                          <FormControlLabel
-                            value="inkjet"
-                            control={<Radio />}
-                            label="InkJet Printer (A4 sheet, needs cutting)"
-                          />
-                        </RadioGroup>
-                      )}
-                    />
-                  </Box>
-
-                  <Divider />
-
-                  {/* Actions */}
-                  <Stack direction="row" spacing={2} justifyContent="flex-end">
-                    <Button variant="outlined">Set as Default</Button>
-                    <Button type="submit" variant="contained" disabled={saving}>
-                      {saving ? 'Saving...' : 'Save Settings'}
-                    </Button>
-                  </Stack>
-                </Stack>
-              </form>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Right: Label Preview */}
-        <Grid size={{ xs: 12, md: 4 }}>
-          <LabelPreview values={values} order={mockOrder} preferences={preferences} />
-        </Grid>
-      </Grid>
-    </Stack>
+                  ))}
+                </Box>
+                <Box sx={{ p: 0.72 }}>
+                  <Typography sx={{ fontSize: '0.66rem', fontWeight: 700, color: '#1f2937' }}>
+                    If not delivered, Return to:
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.66rem', color: '#4b5563', mt: 0.3 }}>-</Typography>
+                  <Typography sx={{ fontSize: '0.68rem', color: '#4b5563', mt: 1.2 }}>
+                    Phone: {previewLabel.phone}
+                  </Typography>
+                </Box>
+              </Box>
+              <Box>
+                <Box sx={{ minHeight: 60, borderBottom: '1px solid #70757d' }} />
+                <Box sx={{ minHeight: 56, p: 0.8, borderBottom: '1px solid #70757d' }}>
+                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#374151' }}>
+                    (PREPAID)
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 0.72 }}>
+                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#1f2937', lineHeight: 1.44 }}>
+                    Order Id: {previewLabel.orderId}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#1f2937', lineHeight: 1.44 }}>
+                    Ref./Invoice#: {previewLabel.refInvoice}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#1f2937', lineHeight: 1.44 }}>
+                    Order Number: {previewLabel.orderNumber}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#1f2937', lineHeight: 1.44 }}>
+                    Date: {previewLabel.date}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#1f2937', lineHeight: 1.44 }}>
+                    Invoice Value:{previewLabel.invoiceValue}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      </Stack>
+    </Box>
   )
 }

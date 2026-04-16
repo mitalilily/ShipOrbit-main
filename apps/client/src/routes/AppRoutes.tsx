@@ -39,6 +39,7 @@ const CourierPriorityPage = lazy(
 // Billing
 const WalletTransactions = lazy(() => import('../pages/billings/WalletTransactions'))
 const Invoices = lazy(() => import('../pages/billings/Invoices'))
+const BillingPreferences = lazy(() => import('../pages/billings/BillingPreferences'))
 
 // Channels
 const Channels = lazy(() => import('../pages/channels/Channels'))
@@ -132,11 +133,37 @@ export default function AppRoutes() {
               </RequireAuth>
             }
           >
+            {/* ParcelX-style dashboard + shell */}
             <Route path="/settings" element={<Settings />} />
+            <Route path="/settings/api-docs" element={<ApiIntegration />} />
+            <Route path="/setting/apidocs" element={<ApiIntegration />} />
+            <Route path="/apidocs" element={<ApiIntegration />} />
+            <Route path="/setting/labelsetting" element={<LabelSettingsPage />} />
+            <Route path="/setting/secureshipment" element={<LabelSettingsPage />} />
+            <Route path="/setting/manageteam" element={<UsersManagement />} />
+            <Route path="/setting/uniqueqr" element={<LabelSettingsPage />} />
             <Route path="/settings/manage_pickups" element={<PickupAddresses />} />
+            <Route path="/setting/invoicepage" element={<Invoices />} />
             <Route path="/billing/wallet_transactions" element={<WalletTransactions />} />
+            <Route path="/billingdetail" element={<WalletTransactions />} />
+            <Route path="/wallet/wallet_deduction" element={<WalletTransactions />} />
+            <Route path="/wallet/add-money" element={<WalletTransactions />} />
+            <Route path="/wallet/addmoney" element={<WalletTransactions />} />
+            <Route path="/wallet/recharge-history" element={<WalletTransactions />} />
+            <Route path="/wallet/rechargehistory" element={<WalletTransactions />} />
             <Route path="/billing/invoice_management" element={<Invoices />} />
+            <Route path="/invoicepage" element={<Invoices />} />
+            <Route path="/invoiceprint" element={<Invoices />} />
+            <Route path="/invoiceprints" element={<Invoices />} />
+            <Route path="/shipment/invoiceprints" element={<Invoices />} />
+            <Route path="/billing/communication-invoice" element={<Invoices />} />
+            <Route path="/billing/communicationinvoice" element={<Invoices />} />
+            <Route path="/billing/order-invoice" element={<Invoices />} />
+            <Route path="/billing/orderinvoice" element={<Invoices />} />
+            <Route path="/settings/billing_preferences" element={<BillingPreferences />} />
             <Route path="/orders/list" element={<Orders />} />
+            <Route path="/shipment" element={<Orders />} />
+            <Route path="/shipment/failed" element={<Orders />} />
             <Route
               path="/orders/create"
               element={
@@ -145,16 +172,67 @@ export default function AppRoutes() {
                 </RequireMerchantReady>
               }
             />
+            <Route
+              path="/addorders/forward/AddOrder"
+              element={
+                <RequireMerchantReady>
+                  <CreateOrderWrapper />
+                </RequireMerchantReady>
+              }
+            />
+            <Route
+              path="/addorders/forward/BulkOrder"
+              element={
+                <RequireMerchantReady>
+                  <CreateOrderWrapper />
+                </RequireMerchantReady>
+              }
+            />
+            <Route
+              path="/addorders/reverse/SinglePickup"
+              element={
+                <RequireMerchantReady>
+                  <CreateOrderWrapper />
+                </RequireMerchantReady>
+              }
+            />
+            <Route
+              path="/addorders/reverse/QuickPickup"
+              element={
+                <RequireMerchantReady>
+                  <CreateOrderWrapper />
+                </RequireMerchantReady>
+              }
+            />
+            <Route
+              path="/addorders/reverse/BulkReturn"
+              element={
+                <RequireMerchantReady>
+                  <CreateOrderWrapper />
+                </RequireMerchantReady>
+              }
+            />
             <Route path="/orders/b2c/list" element={<B2COrdersList />} />
+            <Route path="/channel/orders" element={<Orders />} />
+            <Route path="/shipment/orders" element={<Orders />} />
             <Route path="/support/about_us" element={<AboutUs />} />
+            <Route path="/support/contact-us" element={<CompanyDetails />} />
             <Route path="/orders/b2b/list" element={<B2bOrders />} />
             <Route path="/settings/invoice_preferences" element={<InvoicePreferences />} />
             <Route path="/settings/label_config" element={<LabelSettingsPage />} />
             <Route path="/settings/users_management" element={<UsersManagement />} />
             <Route path="/settings/courier_priority" element={<CourierPriorityPage />} />
+            <Route path="/setting/courierpriority" element={<CourierPriorityPage />} />
+            <Route path="/settings/courier-priority" element={<CourierPriorityPage />} />
+            <Route path="/courierpriority" element={<CourierPriorityPage />} />
             <Route path="/settings/api-integration" element={<ApiIntegration />} />
             <Route path="/channels/connected" element={<Channels />} />
+            <Route path="/channels" element={<Channels />} />
+            <Route path="/channel/connected" element={<Channels />} />
+            <Route path="/channel/pending" element={<Orders />} />
             <Route path="/channels/channel_list" element={<ChannelList />} />
+            <Route path="/channel/available" element={<ChannelList />} />
+            <Route path="/channel/addchannel" element={<ChannelList />} />
             <Route path="/policies/*" element={<PoliciesLayout />}>
               <Route path="refund_cancellation" element={<CancellationPolicy />} />
               <Route path="privacy_policy" element={<PrivacyPolicy />} />
@@ -171,25 +249,63 @@ export default function AppRoutes() {
               <Route path="bank_details" element={<BankAccountsSection />} />
               <Route path="kyc_details" element={<KycSection />} />
             </Route>
+            <Route path="/user/profile-details" element={<Navigate to="/profile/user_profile" replace />} />
+            <Route
+              path="/profiles/billingdetail"
+              element={<Navigate to="/settings/billing_preferences" replace />}
+            />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/date-wise-shipments" element={<Dashboard />} />
+            <Route path="/dashboard/product-wise-shipments" element={<Dashboard />} />
             <Route path="/tools/rate_card" element={<RateCard />} />
             <Route path="/tools/rate_calculator" element={<RateCalculator />} />
             <Route path="/tools/order_tracking" element={<OrderTrackingForm />} />
+            <Route path="/utility/ratecard" element={<RateCard />} />
+            <Route path="/utility/ratecalculator" element={<RateCalculator />} />
+            <Route path="/utility/pincode" element={<RateCalculator />} />
+            <Route path="/trackingbill" element={<OrderTrackingForm />} />
+            <Route path="/custom-tracking" element={<OrderTrackingForm />} />
+            <Route path="/tickets" element={<SupportTicketsPage />} />
             <Route path="/support/tickets" element={<SupportTicketsPage />} />
+            <Route path="/support" element={<CompanyDetails />} />
             <Route path="/support/tickets/:id" element={<TicketDetailsPage />} />
             <Route path="/home" element={<Home />} />
             <Route path="/couriers/partners" element={<Couriers />} />
             <Route path="/cod-remittance" element={<CodRemittancesList />} />
+            <Route path="/cod" element={<CodRemittancesList />} />
+            <Route path="/billing/cod" element={<CodRemittancesList />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/report/mis-report" element={<Reports />} />
+            <Route path="/communication/credit_recharge" element={<WalletTransactions />} />
+            <Route path="/communication/recharge_history" element={<WalletTransactions />} />
+            <Route path="/communication/notificationsetting" element={<BillingPreferences />} />
+            <Route path="/communication/notification-history" element={<BillingPreferences />} />
+            <Route path="/communication/ladger" element={<BillingPreferences />} />
+            <Route path="/communication/ndr" element={<NdrList />} />
+            <Route path="/communication/channelpricing" element={<BillingPreferences />} />
             <Route path="/reconciliation/weight" element={<WeightReconciliation />} />
             <Route path="/reconciliation/weight/:id" element={<DiscrepancyDetails />} />
             <Route
               path="/reconciliation/weight/settings"
               element={<WeightReconciliationSettings />}
             />
+            <Route path="/weight/discrepancy/list" element={<WeightReconciliation />} />
+            <Route
+              path="/weight/discrepancy/summary"
+              element={<WeightReconciliation />}
+            />
             {/* Ops */}
             <Route path="/ops/ndr" element={<NdrList />} />
+            <Route path="/ndr" element={<NdrList />} />
+            <Route path="/ndr/ndr-shipment" element={<NdrList />} />
+            <Route path="/ndr-shipment" element={<NdrList />} />
+            <Route path="/ndrreport" element={<NdrList />} />
+            <Route path="/ndractive" element={<NdrList />} />
+            <Route path="/ndrinitiated" element={<NdrList />} />
+            <Route path="/ndrdelivered" element={<NdrList />} />
             <Route path="/ops/rto" element={<RtoList />} />
+            <Route path="/rtoreport" element={<RtoList />} />
+            <Route path="/ndrrto" element={<RtoList />} />
           </Route>
           {/* fallback */}
           <Route path="*" element={<Navigate to="/login" replace />} />

@@ -1,417 +1,351 @@
-import { Box, Button, Card, CardContent, Chip, Grid, Stack, Typography } from '@mui/material'
-import moment from 'moment'
-import { useState } from 'react'
-import {
-  MdAccessTime,
-  MdAccountBalanceWallet,
-  MdCheckCircle,
-  MdDownload,
-  MdHourglassEmpty,
-  MdTrendingUp,
-} from 'react-icons/md'
-import { FilterBar, type FilterField } from '../../components/FilterBar'
-import PageHeading from '../../components/UI/heading/PageHeading'
-import DataTable, { type Column } from '../../components/UI/table/DataTable'
-import {
-  handleCodRemittancesExport,
-  useCodRemittances,
-  useCodStats,
-} from '../../hooks/useCodRemittance'
+import { alpha, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { HiOutlineDownload, HiOutlineUpload } from 'react-icons/hi'
+import { NavLink, useLocation } from 'react-router-dom'
+import { brand } from '../../theme/brand'
+
+const panelSx = {
+  bgcolor: '#FFFFFF',
+  border: '1px solid #e7ebf0',
+  borderRadius: '10px',
+  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+}
+
+const topTabs = [
+  { label: 'COD', path: '/billing/cod' },
+  { label: 'Order Invoice', path: '/billing/orderinvoice' },
+  { label: 'Communication Invoice', path: '/billing/communicationinvoice' },
+]
+
+const miniFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '4px',
+    minHeight: 32,
+    fontSize: '0.71rem',
+    '& fieldset': { borderColor: '#eceff4' },
+  },
+}
+
+const chartLegend = [
+  { label: 'Remitted', color: '#71c96a' },
+  { label: 'Accruing', color: '#f4d575' },
+  { label: 'Generated', color: '#a5bdf8' },
+]
+
+const isPath = (pathname: string, path: string) => pathname === path || pathname.startsWith(`${path}/`)
 
 export default function CodRemittancesList() {
-  const [page, setPage] = useState(1)
-  const [rowsPerPage, setRowsPerPage] = useState(20)
-  const [filters, setFilters] = useState<{
-    status?: string
-    fromDate?: Date
-    toDate?: Date
-  }>({})
-
-  // Convert Date objects to ISO strings for API
-  const apiFilters = {
-    status: filters.status,
-    fromDate: filters.fromDate?.toISOString(),
-    toDate: filters.toDate?.toISOString(),
-  }
-
-  // Use custom hooks
-  const { data: stats } = useCodStats()
-  const { data, isLoading } = useCodRemittances(page, rowsPerPage, apiFilters)
-
-  const handleExport = async () => {
-    try {
-      await handleCodRemittancesExport(apiFilters)
-    } catch (error) {
-      console.error('Export failed:', error)
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    return status === 'credited' ? 'success' : 'info'
-  }
-
-  const getStatusIcon = (status: string) => {
-    return status === 'credited' ? <MdCheckCircle /> : <MdHourglassEmpty />
-  }
-
-  const filterFields: FilterField[] = [
-    {
-      name: 'status',
-      label: 'Status',
-      type: 'select',
-      options: [
-        { label: 'All', value: '' },
-        { label: 'Processing', value: 'pending' },
-        { label: 'Settled Offline', value: 'credited' },
-      ],
-      placeholder: 'Select status',
-    },
-    {
-      name: 'fromDate',
-      label: 'From Date',
-      type: 'date',
-      placeholder: 'Start date',
-    },
-    {
-      name: 'toDate',
-      label: 'To Date',
-      type: 'date',
-      placeholder: 'End date',
-    },
-  ]
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const columns: Column<any>[] = [
-    {
-      id: 'orderNumber',
-      label: 'Order Number',
-      minWidth: 150,
-      render: (_, row) => (
-        <Box>
-          <Typography variant="body2" fontWeight={600}>
-            {row.orderNumber}
-          </Typography>
-          {row.awbNumber && (
-            <Typography variant="caption" color="text.secondary">
-              AWB: {row.awbNumber}
-            </Typography>
-          )}
-        </Box>
-      ),
-    },
-    {
-      id: 'courierPartner',
-      label: 'Courier',
-      minWidth: 120,
-      render: (val) => <Typography variant="body2">{val || 'N/A'}</Typography>,
-    },
-    {
-      id: 'codAmount',
-      label: 'COD Amount',
-      minWidth: 120,
-      render: (val) => (
-        <Typography variant="body2" fontWeight={600}>
-          ₹{Number(val).toLocaleString('en-IN')}
-        </Typography>
-      ),
-    },
-    {
-      id: 'deductions',
-      label: 'Deductions',
-      minWidth: 120,
-      render: (val) => (
-        <Typography variant="body2" color="error.main">
-          -₹{Number(val).toLocaleString('en-IN')}
-        </Typography>
-      ),
-    },
-    {
-      id: 'remittableAmount',
-      label: 'Remittable',
-      minWidth: 130,
-      render: (val) => (
-        <Typography variant="body2" fontWeight={700} color="success.main">
-          ₹{Number(val).toLocaleString('en-IN')}
-        </Typography>
-      ),
-    },
-    {
-      id: 'status',
-      label: 'Status',
-      minWidth: 130,
-      render: (val) => (
-        <Chip label={val} color={getStatusColor(val)} size="small" icon={getStatusIcon(val)} />
-      ),
-    },
-    {
-      id: 'collectedAt',
-      label: 'Collected',
-      minWidth: 120,
-      render: (val) => (
-        <Typography variant="body2">{val ? moment(val).format('DD MMM YYYY') : 'N/A'}</Typography>
-      ),
-    },
-    {
-      id: 'creditedAt',
-      label: 'Settled At',
-      minWidth: 150,
-      render: (val) => (
-        <Typography variant="body2">
-          {val ? moment(val).format('DD MMM YYYY HH:mm') : '-'}
-        </Typography>
-      ),
-    },
-  ]
+  const location = useLocation()
 
   return (
-    <Box p={3}>
-      <Stack
-        direction={{ xs: 'column', lg: 'row' }}
-        justifyContent="space-between"
-        alignItems={{ xs: 'stretch', lg: 'center' }}
-        gap={2}
-        mb={3}
-      >
-        <PageHeading
-          eyebrow="Billing Panel"
-          title="COD Remittance"
-          subtitle="Track your cash-on-delivery settlements, settled batches, and payout progress in the shared workspace style."
-        />
-        <Button variant="contained" startIcon={<MdDownload />} onClick={handleExport}>
-          Export CSV
-        </Button>
-      </Stack>
-
-      {/* Statistics Cards */}
-      <Grid container spacing={3} mb={4}>
-        {/* Remitted Till Date */}
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Card
-            elevation={0}
-            sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: -50,
-                right: -50,
-                width: 150,
-                height: 150,
-                borderRadius: '50%',
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
-              },
-            }}
-          >
-            <CardContent sx={{ position: 'relative', zIndex: 1 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.9, mb: 0.5 }}>
-                    Remitted Till Date
-                  </Typography>
-                  <Typography variant="h4" fontWeight="bold">
-                    ₹{stats?.remittedTillDate.toLocaleString('en-IN') || 0}
-                  </Typography>
-                </Box>
-                <Box
+    <Box sx={{ pb: 2 }}>
+      <Stack spacing={1.15}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack direction="row" spacing={0.45}>
+            {topTabs.map((tab) => {
+              const active = isPath(location.pathname, tab.path)
+              return (
+                <Button
+                  key={tab.path}
+                  component={NavLink}
+                  to={tab.path}
                   sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    borderRadius: 2,
-                    p: 1,
-                    display: 'flex',
+                    minHeight: 26,
+                    px: 1.05,
+                    borderRadius: '4px',
+                    textTransform: 'none',
+                    fontSize: '0.63rem',
+                    fontWeight: 700,
+                    color: active ? '#FFFFFF' : '#525a66',
+                    bgcolor: active ? '#111111' : '#f6f7f9',
+                    border: active ? '1px solid #111111' : '1px solid #eceff4',
                   }}
                 >
-                  <MdTrendingUp size={28} />
-                </Box>
-              </Stack>
-              <Stack direction="row" alignItems="center" spacing={0.5}>
-                <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                  {stats?.creditedCount || 0} settled remittances
-                </Typography>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
+                  {tab.label}
+                </Button>
+              )
+            })}
+          </Stack>
 
-        {/* Last Remittance */}
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Card
-            elevation={0}
+          <Stack direction="row" spacing={0.65}>
+            <TextField select value="AWB" sx={{ ...miniFieldSx, width: 72 }}>
+              <MenuItem value="AWB">AWB</MenuItem>
+            </TextField>
+            <Button
+              startIcon={<HiOutlineDownload size={12} />}
+              sx={{
+                minHeight: 32,
+                px: 1,
+                borderRadius: '4px',
+                textTransform: 'none',
+                fontSize: '0.66rem',
+                color: '#6b7280',
+                border: '1px solid #eceff4',
+              }}
+            >
+              Download Sample File
+            </Button>
+            <Button
+              startIcon={<HiOutlineUpload size={12} />}
+              sx={{
+                minHeight: 32,
+                px: 1,
+                borderRadius: '4px',
+                textTransform: 'none',
+                fontSize: '0.66rem',
+                color: '#6b7280',
+                border: '1px solid #eceff4',
+              }}
+            >
+              Choose CSV File
+            </Button>
+            <Button
+              sx={{
+                minHeight: 32,
+                px: 1.15,
+                borderRadius: '4px',
+                textTransform: 'none',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                color: '#FFFFFF',
+                bgcolor: brand.accent,
+              }}
+            >
+              Submit
+            </Button>
+          </Stack>
+        </Stack>
+
+        <Stack direction="row" spacing={0.8} alignItems="center">
+          <TextField select value="COD Date" sx={{ ...miniFieldSx, width: 116 }}>
+            <MenuItem value="COD Date">COD Date</MenuItem>
+          </TextField>
+          <TextField value="18 Mar 2026 12:00 am - 16 Apr 2026 09:31 pm" sx={{ ...miniFieldSx, width: 248 }} />
+          <Button
             sx={{
-              bgcolor: 'background.paper',
-              border: '1px solid',
-              borderColor: 'divider',
-              '&:hover': {
-                boxShadow: 3,
-                transform: 'translateY(-2px)',
-                transition: 'all 0.2s ease-in-out',
-              },
+              minHeight: 32,
+              px: 1.2,
+              borderRadius: '4px',
+              textTransform: 'none',
+              fontSize: '0.68rem',
+              color: '#FFFFFF',
+              bgcolor: brand.accent,
             }}
           >
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary" mb={0.5}>
-                    Last Remittance
-                  </Typography>
-                  <Typography variant="h4" fontWeight="bold" color="success.main">
-                    ₹{stats?.lastRemittance.toLocaleString('en-IN') || 0}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    bgcolor: 'success.lighter',
-                    color: 'success.main',
-                    borderRadius: 2,
-                    p: 1,
-                    display: 'flex',
-                  }}
-                >
-                  <MdCheckCircle size={28} />
-                </Box>
-              </Stack>
-              <Typography variant="caption" color="text.secondary">
-                Most recent settlement
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Next Remittance (Expected) */}
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Card
-            elevation={0}
+            Search
+          </Button>
+          <Button
             sx={{
-              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: -50,
-                right: -50,
-                width: 150,
-                height: 150,
-                borderRadius: '50%',
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
-              },
+              minHeight: 32,
+              px: 1.1,
+              borderRadius: '4px',
+              textTransform: 'none',
+              fontSize: '0.68rem',
+              color: '#6b7280',
+              border: '1px solid #eceff4',
             }}
           >
-            <CardContent sx={{ position: 'relative', zIndex: 1 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.9, mb: 0.5 }}>
-                    Next Remittance (Expected)
-                  </Typography>
-                  <Typography variant="h4" fontWeight="bold">
-                    ₹{stats?.nextRemittance.toLocaleString('en-IN') || 0}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    borderRadius: 2,
-                    p: 1,
-                    display: 'flex',
-                  }}
-                >
-                  <MdAccountBalanceWallet size={28} />
-                </Box>
-              </Stack>
-              <Stack direction="row" alignItems="center" spacing={0.5}>
-                <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                  {stats?.pendingCount || 0} orders pending
-                </Typography>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
+            Reset
+          </Button>
+        </Stack>
 
-        {/* Total Remittance Due */}
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <Card
-            elevation={0}
-            sx={{
-              bgcolor: 'background.paper',
-              border: '1px solid',
-              borderColor: 'divider',
-              '&:hover': {
-                boxShadow: 3,
-                transform: 'translateY(-2px)',
-                transition: 'all 0.2s ease-in-out',
-              },
-            }}
-          >
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary" mb={0.5}>
-                    Total Remittance Due
-                  </Typography>
-                  <Typography variant="h4" fontWeight="bold" color="warning.main">
-                    ₹{stats?.totalDue.toLocaleString('en-IN') || 0}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    bgcolor: 'warning.lighter',
-                    color: 'warning.main',
-                    borderRadius: 2,
-                    p: 1,
-                    display: 'flex',
-                  }}
-                >
-                  <MdAccessTime size={28} />
-                </Box>
-              </Stack>
-              <Typography variant="caption" color="text.secondary">
-                Awaiting settlement
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Filters */}
-      <Box mb={3}>
-        <FilterBar
-          fields={filterFields}
-          onApply={(appliedFilters) => {
-            setFilters(appliedFilters)
-            setPage(1) // Reset to first page when filters change
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '0.72fr 2.1fr',
+            gap: 1,
           }}
-          defaultValues={{
-            status: '',
-            fromDate: undefined,
-            toDate: undefined,
-          }}
-        />
-      </Box>
+        >
+          <Box
+            sx={{
+              ...panelSx,
+              minHeight: 188,
+              display: 'grid',
+              placeItems: 'center',
+            }}
+          >
+            <Stack alignItems="center" spacing={0.6}>
+              <Box
+                sx={{
+                  width: 52,
+                  height: 40,
+                  borderRadius: 2,
+                  bgcolor: '#f6f7f9',
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: '#c5ccd6',
+                  fontSize: 24,
+                }}
+              >
+                □
+              </Box>
+              <Typography sx={{ fontSize: '0.66rem', color: '#a0a8b4' }}>No data available</Typography>
+            </Stack>
+          </Box>
 
-      {/* Data Table */}
-      {isLoading ? (
-        <Box display="flex" justifyContent="center" py={4}>
-          <Typography>Loading remittances...</Typography>
+          <Box sx={{ ...panelSx, p: 1.1, minHeight: 188 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.1}>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#2f343c' }}>
+                COD Remitted
+              </Typography>
+              <Stack direction="row" spacing={0.65}>
+                {chartLegend.map((item) => (
+                  <Box
+                    key={item.label}
+                    sx={{
+                      px: 1.05,
+                      py: 0.5,
+                      borderRadius: 999,
+                      bgcolor: alpha(item.color, 0.16),
+                      color: item.color,
+                      border: `1px solid ${alpha(item.color, 0.34)}`,
+                      fontSize: '0.62rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {item.label}
+                  </Box>
+                ))}
+              </Stack>
+            </Stack>
+
+            <Stack spacing={1.05}>
+              {['₹10,000', '₹8,000', '₹6,000', '₹4,000', '₹2,000', '₹0'].map((label) => (
+                <Typography key={label} sx={{ fontSize: '0.62rem', color: '#b1b8c2' }}>
+                  {label}
+                </Typography>
+              ))}
+            </Stack>
+          </Box>
         </Box>
-      ) : (
-        <DataTable
-          rows={data?.remittances || []}
-          columns={columns}
-          title="All Remittances"
-          pagination
-          currentPage={page}
-          defaultRowsPerPage={rowsPerPage}
-          totalCount={data?.totalCount || 0}
-          onPageChange={(newPage) => setPage(newPage)}
-          onRowsPerPageChange={(newRowsPerPage) => {
-            setRowsPerPage(newRowsPerPage)
-            setPage(1)
-          }}
-        />
-      )}
+
+        <Box sx={{ ...panelSx, p: 1.1 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.1}>
+            <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#2f343c' }}>
+              View COD History
+            </Typography>
+            <Stack direction="row" spacing={0.55}>
+              <Button
+                startIcon={<HiOutlineDownload size={12} />}
+                sx={{
+                  minHeight: 28,
+                  px: 1,
+                  borderRadius: '4px',
+                  textTransform: 'none',
+                  fontSize: '0.66rem',
+                  color: '#6b7280',
+                  border: '1px solid #eceff4',
+                }}
+              >
+                All COD Export at AWB Level
+              </Button>
+              <Button
+                sx={{
+                  minHeight: 28,
+                  px: 1,
+                  borderRadius: '4px',
+                  textTransform: 'none',
+                  fontSize: '0.66rem',
+                  color: '#6b7280',
+                  border: '1px solid #eceff4',
+                }}
+              >
+                TRN COD Export
+              </Button>
+            </Stack>
+          </Stack>
+
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.8}>
+            <TextField select value="Item Per Page 100" sx={{ ...miniFieldSx, width: 120 }}>
+              <MenuItem value="Item Per Page 100">Item Per Page 100</MenuItem>
+            </TextField>
+            <Stack direction="row" spacing={0.4}>
+              <Button sx={{ minWidth: 24, minHeight: 24, border: '1px solid #eceff4', borderRadius: '4px' }}>‹</Button>
+              <Button sx={{ minWidth: 24, minHeight: 24, border: '1px solid #eceff4', borderRadius: '4px' }}>1</Button>
+              <Button sx={{ minWidth: 24, minHeight: 24, border: '1px solid #eceff4', borderRadius: '4px' }}>›</Button>
+            </Stack>
+          </Stack>
+
+          <Box sx={{ overflowX: 'auto' }}>
+            <Box
+              sx={{
+                minWidth: 980,
+                display: 'grid',
+                gridTemplateColumns:
+                  '34px repeat(9, minmax(78px, 1fr)) 70px',
+                alignItems: 'center',
+                borderTop: '1px solid #eef1f5',
+                borderBottom: '1px solid #eef1f5',
+              }}
+            >
+              <Box sx={{ py: 1.05, px: 0.6 }}>
+                <Box sx={{ width: 12, height: 12, border: '1px solid #d5dbe4', borderRadius: '2px' }} />
+              </Box>
+              {[
+                'COD ID / TRN',
+                'COD Date',
+                'AWB Count',
+                'Amount',
+                'Refund',
+                'Delivered to RTO Reversal',
+                'Adjust in Wallet',
+                'Advance Paid/ Excess Paid',
+                'Invoice Adjust',
+                'Action',
+              ].map((header) => (
+                <Typography
+                  key={header}
+                  sx={{
+                    py: 1.05,
+                    px: 0.55,
+                    fontSize: '0.6rem',
+                    fontWeight: 700,
+                    color: '#5d6673',
+                  }}
+                >
+                  {header}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+
+          <Box
+            sx={{
+              minHeight: 182,
+              display: 'grid',
+              placeItems: 'center',
+            }}
+          >
+            <Stack alignItems="center" spacing={0.6}>
+              <Box
+                sx={{
+                  width: 44,
+                  height: 34,
+                  borderRadius: 2,
+                  bgcolor: '#f6f7f9',
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: '#d0d6de',
+                  fontSize: 22,
+                }}
+              >
+                ▭
+              </Box>
+              <Typography sx={{ fontSize: '0.66rem', color: '#a0a8b4' }}>No data</Typography>
+            </Stack>
+          </Box>
+
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <TextField select value="Item Per Page 100" sx={{ ...miniFieldSx, width: 120 }}>
+              <MenuItem value="Item Per Page 100">Item Per Page 100</MenuItem>
+            </TextField>
+            <Stack direction="row" spacing={0.4}>
+              <Button sx={{ minWidth: 24, minHeight: 24, border: '1px solid #eceff4', borderRadius: '4px' }}>‹</Button>
+              <Button sx={{ minWidth: 24, minHeight: 24, border: '1px solid #eceff4', borderRadius: '4px' }}>1</Button>
+              <Button sx={{ minWidth: 24, minHeight: 24, border: '1px solid #eceff4', borderRadius: '4px' }}>›</Button>
+            </Stack>
+          </Stack>
+        </Box>
+      </Stack>
     </Box>
   )
 }

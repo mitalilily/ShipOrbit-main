@@ -65,7 +65,7 @@ const sections: Section[] = [
       {
         title: 'Change Password',
         description: 'Update your login credentials securely',
-        key: '/profile/user_profile/settings/password',
+        key: '/profile/password',
         icon: <PiPassword />,
       },
       {
