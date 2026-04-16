@@ -1,13 +1,17 @@
 import { Box, Button, Stack, Typography } from '@mui/material'
 import { useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Link as RouterLink } from 'react-router-dom'
 import { MdOutlineFileUpload } from 'react-icons/md'
 import BrandLogo from '../brand/BrandLogo'
 import CustomInput from '../UI/inputs/CustomInput'
 import { toast } from '../UI/Toast'
-import { useRequestOtp } from '../../hooks/useOTP'
+import { useAuth } from '../../context/auth/AuthContext'
+import { useRequestOtp, useVerifyOtp } from '../../hooks/useOTP'
 import { extractInlineCode } from './inlineCode'
 import AuthCodePreview from './AuthCodePreview'
+import CodeInput from './CodeInput'
+import { getAuthErrorMessage } from './getAuthErrorMessage'
 import { brand } from '../../theme/brand'
 
 type UploadKey = 'aadharFront' | 'aadharBack' | 'pan' | 'gst' | 'cancelledCheque'
@@ -21,15 +25,21 @@ const uploadLabels: Array<{ key: UploadKey; label: string; required?: boolean }>
 ]
 
 export default function SellerSignupPanel() {
+  const navigate = useNavigate()
+  const { setTokens, setUserId } = useAuth()
   const [fullName, setFullName] = useState('')
   const [businessName, setBusinessName] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [email, setEmail] = useState(sessionStorage.getItem('activeEmail') ?? '')
+  const [emailOtp, setEmailOtp] = useState('')
   const [inlineOtp, setInlineOtp] = useState('')
+  const [emailOtpRequested, setEmailOtpRequested] = useState(false)
+  const [emailOtpError, setEmailOtpError] = useState('')
   const [files, setFiles] = useState<Partial<Record<UploadKey, File>>>({})
   const inputRefs = useRef<Partial<Record<UploadKey, HTMLInputElement | null>>>({})
 
   const { mutate: requestOtp, isPending: requestingEmailOtp } = useRequestOtp()
+  const { mutate: verifyOtp, isPending: verifyingEmailOtp } = useVerifyOtp()
 
   const emailError = useMemo(() => {
     if (!email.trim()) return 'Email is required.'
@@ -45,6 +55,7 @@ export default function SellerSignupPanel() {
 
   const handleEmailOtp = () => {
     if (emailError) {
+      setEmailOtpError(emailError)
       toast.open({
         message: emailError,
         severity: 'warning',
@@ -56,6 +67,9 @@ export default function SellerSignupPanel() {
       onSuccess: (response: any) => {
         const code = extractInlineCode(response)
         setInlineOtp(code)
+        setEmailOtp('')
+        setEmailOtpError('')
+        setEmailOtpRequested(true)
         sessionStorage.setItem('activeEmail', email.trim().toLowerCase())
         toast.open({
           message: code
@@ -64,13 +78,42 @@ export default function SellerSignupPanel() {
           severity: 'success',
         })
       },
-      onError: () => {
+      onError: (err: any) => {
+        setEmailOtpError(getAuthErrorMessage(err, 'Unable to send email OTP right now.'))
         toast.open({
-          message: 'Unable to send email OTP right now.',
+          message: getAuthErrorMessage(err, 'Unable to send email OTP right now.'),
           severity: 'error',
         })
       },
     })
+  }
+
+  const handleVerifyEmailOtp = () => {
+    if (emailError) {
+      setEmailOtpError(emailError)
+      return
+    }
+
+    if (emailOtp.length !== 6) {
+      setEmailOtpError('Enter the full 6-digit OTP.')
+      return
+    }
+
+    setEmailOtpError('')
+    verifyOtp(
+      { email: email.trim().toLowerCase(), otp: emailOtp },
+      {
+        onSuccess: ({ token, refreshToken, user }) => {
+          sessionStorage.setItem('activeEmail', email.trim().toLowerCase())
+          setUserId(user?.id)
+          setTokens(token, refreshToken)
+          navigate('/app', { replace: true })
+        },
+        onError: (err: any) => {
+          setEmailOtpError(getAuthErrorMessage(err, 'OTP verification failed'))
+        },
+      },
+    )
   }
 
   const handlePhoneOtp = () => {
@@ -136,7 +179,10 @@ export default function SellerSignupPanel() {
             label="Email"
             placeholder="Enter Email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => {
+              setEmail(event.target.value)
+              setEmailOtpError('')
+            }}
             helperText={email ? emailError : ''}
             error={Boolean(email) && Boolean(emailError)}
           />
@@ -160,6 +206,47 @@ export default function SellerSignupPanel() {
             helper="Use this preview during development when inline OTP exposure is enabled."
           />
         </Box>
+      ) : null}
+
+      {emailOtpRequested ? (
+        <Stack spacing={1.4}>
+          <Box className="shiporbit-auth-subcard">
+            <Typography sx={{ color: brand.ink, lineHeight: 1.68, fontSize: '0.9rem' }}>
+              Enter the 6-digit OTP sent to <strong>{email}</strong>.
+            </Typography>
+          </Box>
+
+          <CodeInput
+            length={6}
+            mode="numeric"
+            value={emailOtp}
+            onChange={(value) => {
+              setEmailOtp(value)
+              setEmailOtpError('')
+            }}
+          />
+
+          {emailOtpError ? (
+            <Typography sx={{ color: brand.danger, textAlign: 'center', fontSize: '0.82rem', fontWeight: 700 }}>
+              {emailOtpError}
+            </Typography>
+          ) : null}
+
+          <Button
+            type="button"
+            variant="contained"
+            onClick={handleVerifyEmailOtp}
+            disabled={verifyingEmailOtp || emailOtp.length !== 6}
+            sx={{
+              ...uploadButtonSx,
+              width: '100%',
+              alignSelf: 'stretch',
+              minWidth: 0,
+            }}
+          >
+            {verifyingEmailOtp ? 'Verifying...' : 'Verify OTP'}
+          </Button>
+        </Stack>
       ) : null}
 
       <Stack spacing={1.15}>

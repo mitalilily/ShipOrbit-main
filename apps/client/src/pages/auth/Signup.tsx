@@ -21,7 +21,7 @@ export default function Signup() {
   return (
     <AuthShell
       panelTitle="Sign Up"
-      panelSubtitle="Welcome! Start your shipping journey with us."
+      panelSubtitle={<strong>Welcome! Start your shipping journey with us.</strong>}
       actions={
         <Box className="shiporbit-auth-card shiporbit-auth-actions-card">
           <Stack spacing={0.9} alignItems="flex-start">
@@ -29,7 +29,7 @@ export default function Signup() {
               <strong>Existing user?</strong>
             </Typography>
             <Typography className="shiporbit-auth-actions-copy">
-              Login to your current ShipOrbit account if you already have access.
+              Sign in to your current ShipOrbit account if you already have access.
             </Typography>
             <Button
               component={RouterLink}

@@ -1,12 +1,13 @@
+import type { ReactNode } from 'react'
 import { Box, Stack, Typography } from '@mui/material'
 import { FiCheckCircle } from 'react-icons/fi'
 import BrandLogo from '../brand/BrandLogo'
 
 interface AuthShellProps {
-  panelTitle: string
-  panelSubtitle?: string
-  actions?: React.ReactNode
-  children: React.ReactNode
+  panelTitle?: ReactNode
+  panelSubtitle?: ReactNode
+  actions?: ReactNode
+  children: ReactNode
 }
 
 const authHighlights = [
@@ -64,9 +65,11 @@ export default function AuthShell({
                   <BrandLogo sx={{ width: { xs: 142, sm: 172 } }} />
                 </Box>
                 <Box>
-                  <Typography component="h3" className="shiporbit-auth-panel-title">
-                    {panelTitle}
-                  </Typography>
+                  {panelTitle ? (
+                    <Typography component="h3" className="shiporbit-auth-panel-title">
+                      {panelTitle}
+                    </Typography>
+                  ) : null}
                   {panelSubtitle ? (
                     <Typography className="shiporbit-auth-panel-subtitle">
                       {panelSubtitle}

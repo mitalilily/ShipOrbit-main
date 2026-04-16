@@ -20,7 +20,7 @@ export default function Login() {
 
   return (
     <AuthShell
-      panelTitle="Login"
+      panelTitle={null}
       actions={
         <Box className="shiporbit-auth-card shiporbit-auth-actions-card">
           <Stack spacing={1.1} alignItems="flex-start">
